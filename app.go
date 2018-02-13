@@ -77,7 +77,7 @@ func AllUsersEndPoint(w http.ResponseWriter, r *http.Request) {
 
 //GET a user by Username + Password
 
-func LoginTest(w http.ResponseWriter, r *http.Request) {
+func LoginByUsernamePassword(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var user User	
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -212,13 +212,13 @@ func respondWithJsonToken(w http.ResponseWriter, code int, response interface{},
 	x1, _ := json.Marshal(payload)
 	x2, _ := json.Marshal(response)
 
-var m1, m2 map[string]interface{}
-json.Unmarshal(x1, &m1)
-json.Unmarshal(x2, &m2)
+	var m1, m2 map[string]interface{}
+	json.Unmarshal(x1, &m1)
+	json.Unmarshal(x2, &m2)
 
-merged := mergemap.Merge(m1, m2)
+	merged := mergemap.Merge(m1, m2)
 
-JsonResponse, _ := json.Marshal(merged)
+	JsonResponse, _ := json.Marshal(merged)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
@@ -238,7 +238,7 @@ JsonResponse, _ := json.Marshal(payload)
 
 // Parse the configuration file 'config.toml', and establish a connection to DB
 
-func init() {
+func EstablishDbConnection() {
 	config.Read()
 
 	dao.Server = config.Server
@@ -252,7 +252,7 @@ func StartServer() {
 	r := mux.NewRouter()
 	r.HandleFunc("/signup", CreateUserEndPoint).Methods("POST")
 	r.HandleFunc("/users", AllUsersEndPoint).Methods("GET")
-	r.HandleFunc("/login", LoginTest).Methods("POST")
+	r.HandleFunc("/login", LoginByUsernamePassword).Methods("POST")
 
 	r.Handle("/users/{id}", negroni.New(
 		negroni.HandlerFunc(ValidateTokenMiddleware),
