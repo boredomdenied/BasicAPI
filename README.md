@@ -7,6 +7,7 @@ Get Postman
 
 
 - Signup
+
 https://www.evernote.com/l/AuJW7-NMRAlC5L4WBLZXfMbqA_DGeccd9CE
 
 You need to store the token for 1 hr session and the id in shared preferences or sqlite to get the users private endpoint
