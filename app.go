@@ -238,7 +238,7 @@ JsonResponse, _ := json.Marshal(payload)
 
 // Parse the configuration file 'config.toml', and establish a connection to DB
 
-func EstablishDbConnection() {
+func init() {
 	config.Read()
 
 	dao.Server = config.Server
