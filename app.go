@@ -8,6 +8,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gorilla/mux"
+	"github.com/peterbourgon/mergemap"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
 	"log"
@@ -66,13 +67,12 @@ type Token struct {
 // GET list of users
 
 func AllUsersEndPoint(w http.ResponseWriter, r *http.Request) {
-	response := ""
 	users, err := dao.FindAll()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJson(w, http.StatusOK, response, users)
+	respondWithJson(w, http.StatusOK, users)
 }
 
 //GET a user by Username + Password
@@ -112,57 +112,17 @@ func LoginTest(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-
-	var user UserCredentials
-
-	err := json.NewDecoder(r.Body).Decode(&user)
-
-	if err != nil {
-		w.WriteHeader(http.StatusForbidden)
-		fmt.Fprint(w, "Error in request")
-		return
-	}
-
-	if strings.ToLower(user.Username) == "1" {
-		if user.Password == "1" {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println("Error logging in")
-			fmt.Fprint(w, "Invalid credentials")
-			return
-		}
-	}
-
-	token := jwt.New(jwt.SigningMethodRS256)
-	claims := make(jwt.MapClaims)
-	claims["exp"] = time.Now().Add(time.Hour * time.Duration(1)).Unix()
-	claims["iat"] = time.Now().Unix()
-	token.Claims = claims
-
-	tokenString, err := token.SignedString(signKey)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, "Error while signing the token")
-		fatal(err)
-	}
-
-	response := Token{tokenString}
-	JsonResponse(response, w)
-
-}
 
 // GET a user by its ID
 
 func FindUserEndpoint(w http.ResponseWriter, r *http.Request) {
-	response := ""
 	params := mux.Vars(r)
 	user, err := dao.FindById(params["id"])
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid User ID")
 		return
 	}
-	respondWithJson(w, http.StatusOK, response, user)
+	respondWithJson(w, http.StatusOK, user)
 }
 
 // POST a new user
@@ -209,13 +169,12 @@ func CreateUserEndPoint(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJson(w, http.StatusCreated, response, user)
+	respondWithJsonToken(w, http.StatusCreated, response, user)
 }
 
 // PUT update an existing user
 
 func UpdateUserEndPoint(w http.ResponseWriter, r *http.Request) {
-	response := ""
 	defer r.Body.Close()
 	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -226,13 +185,12 @@ func UpdateUserEndPoint(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJson(w, http.StatusOK, response, map[string]string{"result": "success"})
+	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 // DELETE an existing user
 
 func DeleteUserEndPoint(w http.ResponseWriter, r *http.Request) {
-	response := ""
 	defer r.Body.Close()
 	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -243,22 +201,38 @@ func DeleteUserEndPoint(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJson(w, http.StatusOK, response, map[string]string{"result": "success"})
+	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
-	response := ""
-	respondWithJson(w, code, response, map[string]string{"error": msg})
+	respondWithJson(w, code, map[string]string{"error": msg})
 }
 
-func respondWithJson(w http.ResponseWriter, code int, response interface{}, payload interface{}) {
-	response1, _ := json.Marshal(payload)
-	response2, _ := json.Marshal(response)
+func respondWithJsonToken(w http.ResponseWriter, code int, response interface{}, payload interface{}) {
+	x1, _ := json.Marshal(payload)
+	x2, _ := json.Marshal(response)
+
+var m1, m2 map[string]interface{}
+json.Unmarshal(x1, &m1)
+json.Unmarshal(x2, &m2)
+
+merged := mergemap.Merge(m1, m2)
+
+JsonResponse, _ := json.Marshal(merged)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	w.Write(response1)
-	w.Write(response2)
+	w.Write(JsonResponse)
+
+}
+
+func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
+
+JsonResponse, _ := json.Marshal(payload)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(JsonResponse)
 
 }
 
