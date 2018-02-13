@@ -75,6 +75,83 @@ func AllUsersEndPoint(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusOK, response, users)
 }
 
+//GET a user by Username + Password
+
+func LoginTest(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	var user User	
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, "Error in request")
+		return
+	}
+
+	user, err:= dao.FindByUsernamePassword(user.Username, user.Password)
+
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid User Credentials")
+		return
+	}
+	
+	token := jwt.New(jwt.SigningMethodRS256)
+	claims := make(jwt.MapClaims)
+	claims["exp"] = time.Now().Add(time.Hour * time.Duration(1)).Unix()
+	claims["iat"] = time.Now().Unix()
+	token.Claims = claims
+
+	tokenString, err := token.SignedString(signKey)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, "Error while signing the token")
+		fatal(err)
+	}
+
+	response := Token{tokenString}
+	JsonResponse(response, w)
+
+}
+
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+
+	var user UserCredentials
+
+	err := json.NewDecoder(r.Body).Decode(&user)
+
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, "Error in request")
+		return
+	}
+
+	if strings.ToLower(user.Username) == "1" {
+		if user.Password == "1" {
+			w.WriteHeader(http.StatusForbidden)
+			fmt.Println("Error logging in")
+			fmt.Fprint(w, "Invalid credentials")
+			return
+		}
+	}
+
+	token := jwt.New(jwt.SigningMethodRS256)
+	claims := make(jwt.MapClaims)
+	claims["exp"] = time.Now().Add(time.Hour * time.Duration(1)).Unix()
+	claims["iat"] = time.Now().Unix()
+	token.Claims = claims
+
+	tokenString, err := token.SignedString(signKey)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, "Error while signing the token")
+		fatal(err)
+	}
+
+	response := Token{tokenString}
+	JsonResponse(response, w)
+
+}
+
 // GET a user by its ID
 
 func FindUserEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -201,6 +278,7 @@ func StartServer() {
 	r := mux.NewRouter()
 	r.HandleFunc("/users", CreateUserEndPoint).Methods("POST")
 	r.HandleFunc("/users", AllUsersEndPoint).Methods("GET")
+	r.HandleFunc("/login", LoginTest).Methods("POST")
 
 	r.Handle("/users/{id}", negroni.New(
 		negroni.HandlerFunc(ValidateTokenMiddleware),
@@ -225,45 +303,6 @@ func ProtectedHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-
-	var user UserCredentials
-
-	err := json.NewDecoder(r.Body).Decode(&user)
-
-	if err != nil {
-		w.WriteHeader(http.StatusForbidden)
-		fmt.Fprint(w, "Error in request")
-		return
-	}
-
-	if strings.ToLower(user.Username) == "" {
-		if user.Password == "" {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println("Error logging in")
-			fmt.Fprint(w, "Invalid credentials")
-			return
-		}
-	}
-
-	token := jwt.New(jwt.SigningMethodRS256)
-	claims := make(jwt.MapClaims)
-	claims["exp"] = time.Now().Add(time.Hour * time.Duration(1)).Unix()
-	claims["iat"] = time.Now().Unix()
-	token.Claims = claims
-
-	tokenString, err := token.SignedString(signKey)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, "Error while signing the token")
-		fatal(err)
-	}
-
-	response := Token{tokenString}
-	JsonResponse(response, w)
-
-}
 
 func ValidateTokenMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 
