@@ -276,7 +276,7 @@ func init() {
 
 func StartServer() {
 	r := mux.NewRouter()
-	r.HandleFunc("/users", CreateUserEndPoint).Methods("POST")
+	r.HandleFunc("/signup", CreateUserEndPoint).Methods("POST")
 	r.HandleFunc("/users", AllUsersEndPoint).Methods("GET")
 	r.HandleFunc("/login", LoginTest).Methods("POST")
 
