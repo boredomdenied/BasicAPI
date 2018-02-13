@@ -14,9 +14,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	. "users-restapi/config"
-	. "users-restapi/dao"
-	. "users-restapi/models"
+	. "GwGTeamProjectApi/config"
+	. "GwGTeamProjectApi/dao"
+	. "GwGTeamProjectApi/models"
 )
 
 var config = Config{}

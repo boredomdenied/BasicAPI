@@ -3,7 +3,7 @@ package dao
 import (
 	"log"
 
-	. "users-restapi/models"
+	. "GwGTeamProjectApi/models"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -33,6 +33,13 @@ func (m *UsersDAO) FindAll() ([]User, error) {
 	var users []User
 	err := db.C(COLLECTION).Find(bson.M{}).All(&users)
 	return users, err
+}
+
+// Find a user by Username + Password
+func (m *UsersDAO) FindByUsernamePassword( username string, password string) (User, error) {
+	var user User
+	err := db.C(COLLECTION).Find(bson.M{"username" : &username, "password" : &password }).One(&user)
+	return user, err	
 }
 
 // Find a user by its id
