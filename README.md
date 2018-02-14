@@ -26,3 +26,22 @@ https://www.evernote.com/l/AuJUXaJMcv1MB7Kb8boq20L0M89v4FMf508
 
 Must insert Bearer Token & use the correct endpoint 
 
+
+### Local development
+
+If you would like to test and develop on a local environment please fork the repo, install Golang, and install MongoDB
+
+Get Golang
+* https://golang.org/doc/install
+
+Get MongoDB
+* https://docs.mongodb.com/manual/administration/install-community/
+
+Please ensure your paths are set for proper Golang development/testing
+You should be able to `go run app.go` from inside this repo root folder
+
+Please ensure MongoDB is properly installed
+You should be able to `mongo` to enter a mongo prompt
+
+Be sure to setup the `users` database
+Enter `mongo` to get inside prompt then enter `user users` to create users database, then type `exit` to leave the prompt
