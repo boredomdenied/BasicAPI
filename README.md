@@ -50,7 +50,7 @@ Enter `mongo` to get inside prompt then enter `use users` to create users databa
 
 You can test from the server without a need to setup a local development environment. 
 If you would like to develop the API it will be necessary to follow the local development steps above.
-If you would like to discuss a matter and are in GwG please find me `Brandon Chapman` and DM directly. 
+If you would like to discuss a matter and are in GwG please find me in slack `Brandon Chapman` and DM directly. 
 If you find an error or a feature missing that is necessary for the service we're creating, please create an ISSUE.
 From issues created we can discuss what steps to best take next. After issues are validated, development can begin.
 When code resolving issue has been developed, please create a PR that will be reviewed before integrated into master.
