@@ -44,4 +44,4 @@ Please ensure MongoDB is properly installed
 You should be able to `mongo` to enter a mongo prompt
 
 Be sure to setup the `users` database
-Enter `mongo` to get inside prompt then enter `user users` to create users database, then type `exit` to leave the prompt
+Enter `mongo` to get inside prompt then enter `use users` to create users database, then type `exit` to leave the prompt
