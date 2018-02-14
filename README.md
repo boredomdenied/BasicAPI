@@ -54,4 +54,4 @@ If you would like to discuss a matter and are in GwG please find me `Brandon Cha
 If you find an error or a feature missing that is necessary for the service we're creating, please create an ISSUE.
 From issues created we can discuss what steps to best take next. After issues are validated, development can begin.
 When code resolving issue has been developed, please create a PR that will be reviewed before integrated into master.
-If PR satisfied requirements, it will be pulled and issue can be closed. 
+If PR satisfies requirements, it will be pulled and issue can be closed. 
