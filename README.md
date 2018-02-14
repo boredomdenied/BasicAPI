@@ -2,6 +2,8 @@
 
 ## How to use
 
+### Test from live server
+
 Get Postman
 * https://www.getpostman.com/
 
