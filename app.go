@@ -252,7 +252,7 @@ func StartServer() {
 	r := mux.NewRouter()
 	r.HandleFunc("/signup", CreateUserEndPoint).Methods("POST")
 	r.HandleFunc("/users", AllUsersEndPoint).Methods("GET")
-	r.HandleFunc("/login", LoginByUsernamePassword).Methods("POST")
+	r.HandleFunc("/login", LoginByUsernamePassword).Methods("GET")
 
 	r.Handle("/users/{id}", negroni.New(
 		negroni.HandlerFunc(ValidateTokenMiddleware),
