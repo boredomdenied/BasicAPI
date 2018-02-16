@@ -7,7 +7,7 @@
 Get Postman
 * https://www.getpostman.com/
 
-Use the server already setup for convenience at this IP: `188.166.69.159:3100`
+Use the server already setup for convenience at this domain: `https://gwg.boredomdenied.com`
 
 
 - Signup `/signup`
