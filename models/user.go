@@ -12,6 +12,6 @@ type UserCredentials struct {
 type User struct {
 	ID       bson.ObjectId `bson:"_id" json:"id"`
 	Username string        `bson:"username" json:"username"`
-	//	Email  		string        	`bson:"email" json:"email"`
+	Email  		string        	`bson:"email" json:"email"`
 	Password string `bson:"password" json:"password"`
 }

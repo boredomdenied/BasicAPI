@@ -10,10 +10,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/peterbourgon/mergemap"
 	"gopkg.in/mgo.v2/bson"
+	"github.com/badoux/checkmail"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 	. "GwGTeamProjectApi/config"
 	. "GwGTeamProjectApi/dao"
@@ -75,9 +75,9 @@ func AllUsersEndPoint(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusOK, users)
 }
 
-//GET a user by Username + Password
+//GET a user by Username or Email + Password
 
-func LoginByUsernamePassword(w http.ResponseWriter, r *http.Request) {
+func LoginByUsernameEmailPassword(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var user User	
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -139,15 +139,28 @@ func CreateUserEndPoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.ToLower(user.Username) == "" {
-		if user.Password == "" {
+	if len([]rune(user.Username)) < 4 {
 			w.WriteHeader(http.StatusForbidden)
 			fmt.Println("Error logging in")
-			fmt.Fprint(w, "Invalid credentials")
+			fmt.Fprint(w, "Username must be at least 4 characters")
 			return
-		}
+		
+	}
+	if checkmail.ValidateFormat(user.Email) != err || checkmail.ValidateHost(user.Email) != err {
+			w.WriteHeader(http.StatusForbidden)
+			fmt.Println("Error logging in")
+			fmt.Fprint(w, "Invalid Email Address")
+			return
+		
 	}
 
+	if len([]rune(user.Password)) < 8 {
+			w.WriteHeader(http.StatusForbidden)
+			fmt.Println("Error logging in")
+			fmt.Fprint(w, "Password must be at least 8 characters")
+			return
+		
+	}
 	token := jwt.New(jwt.SigningMethodRS256)
 	claims := make(jwt.MapClaims)
 	claims["exp"] = time.Now().Add(time.Hour * time.Duration(1)).Unix()
@@ -252,7 +265,7 @@ func StartServer() {
 	r := mux.NewRouter()
 	r.HandleFunc("/signup", CreateUserEndPoint).Methods("POST")
 	r.HandleFunc("/users", AllUsersEndPoint).Methods("GET")
-	r.HandleFunc("/login", LoginByUsernamePassword).Methods("GET")
+	r.HandleFunc("/login", LoginByUsernameEmailPassword).Methods("GET")
 
 	r.Handle("/users/{id}", negroni.New(
 		negroni.HandlerFunc(ValidateTokenMiddleware),
