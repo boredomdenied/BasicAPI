@@ -39,6 +39,11 @@ Get Golang
 Get MongoDB
 * https://docs.mongodb.com/manual/administration/install-community/
 
+Generate RSA signing files via shell (adjust as needed):
+
+$ openssl genrsa -out app.rsa 1024
+$ openssl rsa -in app.rsa -pubout > app.rsa.pub
+
 Please ensure your paths are set for proper Golang development/testing
 You should be able to `go run app.go` from inside this repo root folder
 
