@@ -3,7 +3,7 @@ package dao
 import (
 	"log"
 
-	. "GwGTeamProjectApi/models"
+	. "BasicAPI/models"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -38,6 +38,26 @@ func (m *UsersDAO) FindByUsernamePassword( username string, password string) (Us
 	err := db.C(COLLECTION).Find(bson.M{"username" : &username, "password" : &password }).One(&user)
 	return user, err	
 }
+
+func (m *UsersDAO) FindByEmailPassword( email string, password string) (User, error) {
+	var user User
+	err := db.C(COLLECTION).Find(bson.M{"email" : &email, "password" : &password }).One(&user)
+	return user, err	
+}
+
+
+func (m *UsersDAO) FindByUsername( username string) (User, error) {
+	var user User
+	err := db.C(COLLECTION).Find(bson.M{"username" : &username }).One(&user)
+	return user, err	
+}
+
+func (m *UsersDAO) FindByEmail( email string) (User, error) {
+	var user User
+	err := db.C(COLLECTION).Find(bson.M{"email" : &email }).One(&user)
+	return user, err	
+}
+
 
 func (m *UsersDAO) FindById(id string) (User, error) {
 	var user User
