@@ -15,9 +15,9 @@ import (
 	"log"
 	"net/http"
 	"time"
-	. "GwGTeamProjectApi/config"
-	. "GwGTeamProjectApi/dao"
-	. "GwGTeamProjectApi/models"
+	. "BasicAPI/config"
+	. "BasicAPI/dao"
+	. "BasicAPI/models"
 )
 
 var config = Config{}
@@ -86,13 +86,27 @@ func LoginByUsernameEmailPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+if len([]rune(user.Username)) != 0 && len([]rune(user.Password)) > 7  {
+	var user User	
 	user, err:= dao.FindByUsernamePassword(user.Username, user.Password)
 
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid User Credentials")
-		return
-	}
-	
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid user credentials")
+			return
+		}
+}
+
+
+if len([]rune(user.Email)) != 0 && len([]rune(user.Password)) > 7  {
+	var user User	
+	user, err:= dao.FindByEmailPassword(user.Email, user.Password)
+
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid user credentials")
+			return
+		}
+}
+
 	token := jwt.New(jwt.SigningMethodRS256)
 	claims := make(jwt.MapClaims)
 	claims["exp"] = time.Now().Add(time.Hour * time.Duration(1)).Unix()
@@ -144,23 +158,42 @@ func CreateUserEndPoint(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Error logging in")
 			fmt.Fprint(w, "Username must be at least 4 characters")
 			return
-		
 	}
+
 	if checkmail.ValidateFormat(user.Email) != err || checkmail.ValidateHost(user.Email) != err {
 			w.WriteHeader(http.StatusForbidden)
 			fmt.Println("Error logging in")
 			fmt.Fprint(w, "Invalid Email Address")
 			return
-		
 	}
 
 	if len([]rune(user.Password)) < 8 {
 			w.WriteHeader(http.StatusForbidden)
 			fmt.Println("Error logging in")
 			fmt.Fprint(w, "Password must be at least 8 characters")
-			return
-		
+			return	
 	}
+
+	if len([]rune(user.Username)) != 0 {
+	var user User	
+	user, err:= dao.FindByUsername(user.Username)
+
+		if err == nil {
+			respondWithError(w, http.StatusBadRequest, "Username already taken")
+			return
+		}
+	}
+
+	if len([]rune(user.Email)) != 0 {
+		var user User	
+		user, err:= dao.FindByUsername(user.Email)
+	
+		if err == nil {
+			respondWithError(w, http.StatusBadRequest, "Email already taken")
+			return
+		}
+	}
+
 	token := jwt.New(jwt.SigningMethodRS256)
 	claims := make(jwt.MapClaims)
 	claims["exp"] = time.Now().Add(time.Hour * time.Duration(1)).Unix()
@@ -265,7 +298,7 @@ func StartServer() {
 	r := mux.NewRouter()
 	r.HandleFunc("/signup", CreateUserEndPoint).Methods("POST")
 	r.HandleFunc("/users", AllUsersEndPoint).Methods("GET")
-	r.HandleFunc("/login", LoginByUsernameEmailPassword).Methods("GET")
+	r.HandleFunc("/login", LoginByUsernameEmailPassword).Methods("POST")
 
 	r.Handle("/users/{id}", negroni.New(
 		negroni.HandlerFunc(ValidateTokenMiddleware),
