@@ -33,19 +33,6 @@ func (m *UsersDAO) FindAll() ([]User, error) {
 	return users, err
 }
 
-func (m *UsersDAO) FindByUsernamePassword( username string, password string) (User, error) {
-	var user User
-	err := db.C(COLLECTION).Find(bson.M{"username" : &username, "password" : &password }).One(&user)
-	return user, err	
-}
-
-func (m *UsersDAO) FindByEmailPassword( email string, password string) (User, error) {
-	var user User
-	err := db.C(COLLECTION).Find(bson.M{"email" : &email, "password" : &password }).One(&user)
-	return user, err	
-}
-
-
 func (m *UsersDAO) FindByUsername( username string) (User, error) {
 	var user User
 	err := db.C(COLLECTION).Find(bson.M{"username" : &username }).One(&user)
@@ -58,6 +45,11 @@ func (m *UsersDAO) FindByEmail( email string) (User, error) {
 	return user, err	
 }
 
+func (m *UsersDAO) FindPassword( password string) (User, error) {
+	var user User
+	err := db.C(COLLECTION).Find(bson.M{"password" : &password }).One(&user)
+	return user, err	
+}
 
 func (m *UsersDAO) FindById(id string) (User, error) {
 	var user User

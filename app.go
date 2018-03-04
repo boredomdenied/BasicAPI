@@ -1,23 +1,24 @@
 package main
 
 import (
+	. "BasicAPI/config"
+	. "BasicAPI/dao"
+	. "BasicAPI/models"
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
+	"github.com/badoux/checkmail"
 	"github.com/codegangsta/negroni"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gorilla/mux"
 	"github.com/peterbourgon/mergemap"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
-	"github.com/badoux/checkmail"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
-	. "BasicAPI/config"
-	. "BasicAPI/dao"
-	. "BasicAPI/models"
 )
 
 var config = Config{}
@@ -77,35 +78,46 @@ func AllUsersEndPoint(w http.ResponseWriter, r *http.Request) {
 
 //GET a user by Username or Email + Password
 
-func LoginByUsernameEmailPassword(w http.ResponseWriter, r *http.Request) {
+func LoginByUsernameEmail(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var user User	
+	var user User
+
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprint(w, "Error in request")
 		return
 	}
 
-if len([]rune(user.Username)) != 0 && len([]rune(user.Password)) > 7  {
-	var user User	
-	user, err:= dao.FindByUsernamePassword(user.Username, user.Password)
+	if len([]rune(user.Username)) != 0 {
+		var mgouser User
+		mgouser, err := dao.FindByUsername(user.Username)
 
 		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid username")
+			return
+		}
+		match := CheckPasswordHash(user.Password, mgouser.Password)
+		if match != true {
 			respondWithError(w, http.StatusBadRequest, "Invalid user credentials")
 			return
 		}
-}
+	}
 
-
-if len([]rune(user.Email)) != 0 && len([]rune(user.Password)) > 7  {
-	var user User	
-	user, err:= dao.FindByEmailPassword(user.Email, user.Password)
+	if len([]rune(user.Email)) != 0 {
+		var mgouser User
+		mgouser, err := dao.FindByEmail(user.Email)
 
 		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid email")
+			return
+		}
+		match := CheckPasswordHash(user.Password, mgouser.Password)
+		if match != true {
 			respondWithError(w, http.StatusBadRequest, "Invalid user credentials")
 			return
 		}
-}
+
+	}
 
 	token := jwt.New(jwt.SigningMethodRS256)
 	claims := make(jwt.MapClaims)
@@ -125,7 +137,6 @@ if len([]rune(user.Email)) != 0 && len([]rune(user.Password)) > 7  {
 	JsonResponse(response, w)
 
 }
-
 
 // GET a user by its ID
 
@@ -154,42 +165,43 @@ func CreateUserEndPoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len([]rune(user.Username)) < 4 {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println("Error logging in")
-			fmt.Fprint(w, "Username must be at least 4 characters")
-			return
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Println("Error logging in")
+		fmt.Fprint(w, "Username must be at least 4 characters")
+		return
 	}
 
 	if checkmail.ValidateFormat(user.Email) != err || checkmail.ValidateHost(user.Email) != err {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println("Error logging in")
-			fmt.Fprint(w, "Invalid Email Address")
-			return
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Println("Error logging in")
+		fmt.Fprint(w, "Invalid Email Address")
+		return
 	}
 
 	if len([]rune(user.Password)) < 8 {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println("Error logging in")
-			fmt.Fprint(w, "Password must be at least 8 characters")
-			return	
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Println("Error logging in")
+		fmt.Fprint(w, "Password must be at least 8 characters")
+		return
 	}
 
 	if len([]rune(user.Username)) != 0 {
-	var user User	
-	user, err:= dao.FindByUsername(user.Username)
+		var mgouser User
+		mgouser, _ = dao.FindByUsername(user.Username)
 
-		if err == nil {
-			respondWithError(w, http.StatusBadRequest, "Username already taken")
+		if mgouser.Username != "" {
+			respondWithError(w, http.StatusBadRequest, "Username already exists")
 			return
 		}
+
 	}
 
 	if len([]rune(user.Email)) != 0 {
-		var user User	
-		user, err:= dao.FindByUsername(user.Email)
-	
-		if err == nil {
-			respondWithError(w, http.StatusBadRequest, "Email already taken")
+		var mgouser User
+		mgouser, _ = dao.FindByEmail(user.Email)
+
+		if mgouser.Email != "" {
+			respondWithError(w, http.StatusBadRequest, "Email already exists")
 			return
 		}
 	}
@@ -210,7 +222,18 @@ func CreateUserEndPoint(w http.ResponseWriter, r *http.Request) {
 
 	response := Token{tokenString}
 
+	// Generate bcrypt hash
+
+	if bytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), 14); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, "Error while signing the token")
+		return
+	} else {
+		user.Password = string(bytes)
+	}
+
 	user.ID = bson.NewObjectId()
+
 	if err := dao.Insert(user); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -274,7 +297,7 @@ func respondWithJsonToken(w http.ResponseWriter, code int, response interface{},
 
 func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 
-JsonResponse, _ := json.Marshal(payload)
+	JsonResponse, _ := json.Marshal(payload)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
@@ -298,7 +321,7 @@ func StartServer() {
 	r := mux.NewRouter()
 	r.HandleFunc("/signup", CreateUserEndPoint).Methods("POST")
 	r.HandleFunc("/users", AllUsersEndPoint).Methods("GET")
-	r.HandleFunc("/login", LoginByUsernameEmailPassword).Methods("POST")
+	r.HandleFunc("/login", LoginByUsernameEmail).Methods("POST")
 
 	r.Handle("/users/{id}", negroni.New(
 		negroni.HandlerFunc(ValidateTokenMiddleware),
@@ -322,7 +345,6 @@ func ProtectedHandler(w http.ResponseWriter, r *http.Request) {
 	JsonResponse(response, w)
 
 }
-
 
 func ValidateTokenMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 
@@ -356,4 +378,9 @@ func JsonResponse(response interface{}, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(json)
+}
+
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
